@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير المصاريف المتطور</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { background-color: #f5f5f5; font-family: sans-serif; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .hide { display: none !important; }
+        
+        .money-plus { color: #198754; font-weight: bold; }
+        .money-minus { color: #dc3545; font-weight: bold; }
+        .big-number { font-size: 2rem; font-weight: bold; text-align: center; margin: 10px 0; }
+        
+        .item-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .del-btn { background: none; border: none; color: red; font-weight: bold; cursor: pointer; }
+        
+        /* تنسيق الرسوم البيانية */
+        .chart-container { position: relative; height: 250px; width: 100%; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <h2 class="text-center mb-4">✅ مدير المصاريف</h2>
+
+    <div class="card">
+        <label>💰 الراتب الشهري الثابت</label>
+        <input type="number" id="salaryInput" class="form-control text-center" style="font-size: 1.5rem;" placeholder="أدخل الراتب" oninput="saveData()">
+    </div>
+
+    <div class="row text-center mb-3">
+        <div class="col-4">
+            <div class="card p-2">
+                <small>دخل إضافي</small>
+                <div id="showIncome" class="money-plus">0</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card p-2">
+                <small>مصاريف</small>
+                <div id="showExpense" class="money-minus">0</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card p-2">
+                <small>الصافي</small>
+                <div id="showNet">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="big-number" id="finalBalance">0 ج.م</div>
+
+    <div class="card">
+        <h5 class="text-center mb-3">📊 تحليل البيانات</h5>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <h6 class="text-center text-danger">أكثر بند بتصرف فيه</h6>
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+                <div id="noExpData" class="text-center text-muted mt-5 hide">لا توجد مصاريف لعرضها</div>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="text-center text-success">أكثر مصدر للدخل</h6>
+                <div class="chart-container">
+                    <canvas id="incomeChart"></canvas>
+                </div>
+                <div id="noIncData" class="text-center text-muted mt-5 hide">لا يوجد دخل إضافي لعرضه</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h5>➕ إضافة عملية جديدة</h5>
+        
+        <div class="btn-group w-100 mb-3" role="group">
+            <input type="radio" class="btn-check" name="opType" id="radioExp" value="expense" checked onchange="toggleLists()">
+            <label class="btn btn-outline-danger" for="radioExp">📤 مصروف</label>
+
+            <input type="radio" class="btn-check" name="opType" id="radioInc" value="income" onchange="toggleLists()">
+            <label class="btn btn-outline-success" for="radioInc">📥 دخل إضافي</label>
+        </div>
+
+        <div class="row g-2">
+            <div class="col-6">
+                <label>المبلغ</label>
+                <input type="number" id="inpAmount" class="form-control" placeholder="0">
+            </div>
+
+            <div class="col-6">
+                <label>التصنيف</label>
+                
+                <select id="listExpense" class="form-select">
+                    <option value="مواصلات">🚕 مواصلات</option>
+                    <option value="طعام">🍔 طعام</option>
+                    <option value="علاج">💊 علاج</option>
+                    <option value="ملابس">👕 ملابس</option>
+                    <option value="كهرباء">💡 كهرباء</option>
+                    <option value="غاز">🔥 غاز</option>
+                    <option value="مياه">💧 مياه</option>
+                    <option value="اصلاحات">🔧 اصلاحات</option>
+                    <option value="ترفيه">🎉 ترفيه</option>
+                    <option value="أخرى">🔹 أخرى</option>
+                </select>
+
+                <select id="listIncome" class="form-select hide">
+                    <option value="دليفري">🛵 دليفري</option>
+                    <option value="فري لانس">💻 فري لانس</option>
+                    <option value="مكافأة">🎁 مكافأة</option>
+                    <option value="حوافز">📈 حوافز</option>
+                    <option value="أخرى">🔹 أخرى</option>
+                </select>
+            </div>
+        </div>
+
+        <label class="mt-2">التاريخ</label>
+        <input type="date" id="inpDate" class="form-control mb-3">
+
+        <button onclick="addTransaction()" class="btn btn-dark w-100">حفظ</button>
+    </div>
+
+    <div class="card">
+        <div class="d-flex justify-content-between mb-2">
+            <h5>📝 السجل</h5>
+            <button onclick="clearAll()" class="btn btn-sm btn-outline-danger">مسح الكل</button>
+        </div>
+        <div id="historyList">
+        </div>
+    </div>
+
+    <script>
+        // --- متغيرات للرسوم البيانية ---
+        let expChartInstance = null;
+        let incChartInstance = null;
+
+        let db = {
+            salary: 0,
+            transactions: []
+        };
+
+        window.onload = function() {
+            let savedData = localStorage.getItem('myMoneyApp_v2'); // غيرت الاسم لنسخة جديدة عشان التحديث
+            if (savedData) {
+                db = JSON.parse(savedData);
+                document.getElementById('salaryInput').value = db.salary > 0 ? db.salary : '';
+            }
+            document.getElementById('inpDate').valueAsDate = new Date();
+            refreshUI();
+        };
+
+        function toggleLists() {
+            const isIncome = document.getElementById('radioInc').checked;
+            const listExp = document.getElementById('listExpense');
+            const listInc = document.getElementById('listIncome');
+
+            if (isIncome) {
+                listExp.classList.add('hide');
+                listInc.classList.remove('hide');
+            } else {
+                listExp.classList.remove('hide');
+                listInc.classList.add('hide');
+            }
+        }
+
+        function addTransaction() {
+            const amountVal = document.getElementById('inpAmount').value;
+            if (!amountVal) return alert("اكتب المبلغ الأول!");
+
+            const isIncome = document.getElementById('radioInc').checked;
+            
+            let categoryVal;
+            if (isIncome) {
+                categoryVal = document.getElementById('listIncome').value;
+            } else {
+                categoryVal = document.getElementById('listExpense').value;
+            }
+
+            const newTrans = {
+                id: Date.now(),
+                type: isIncome ? 'income' : 'expense',
+                amount: parseFloat(amountVal),
+                category: categoryVal,
+                date: document.getElementById('inpDate').value
+            };
+
+            db.transactions.push(newTrans);
+            saveData();
+            
+            document.getElementById('inpAmount').value = '';
+            refreshUI();
+        }
+
+        function deleteItem(id) {
+            if (confirm("أكيد عايز تمسح؟")) {
+                db.transactions = db.transactions.filter(t => t.id !== id);
+                saveData();
+                refreshUI();
+            }
+        }
+
+        function saveData() {
+            const sal = document.getElementById('salaryInput').value;
+            db.salary = sal ? parseFloat(sal) : 0;
+            localStorage.setItem('myMoneyApp_v2', JSON.stringify(db));
+            refreshUI();
+        }
+
+        function refreshUI() {
+            const listDiv = document.getElementById('historyList');
+            listDiv.innerHTML = '';
+
+            let totalInc = 0;
+            let totalExp = 0;
+
+            const reversed = [...db.transactions].reverse();
+            
+            reversed.forEach(t => {
+                if(t.type === 'income') totalInc += t.amount;
+                else totalExp += t.amount;
+
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <div>
+                        <strong>${t.category}</strong> <br>
+                        <small style="color:#777">${t.date}</small>
+                    </div>
+                    <div>
+                        <span class="${t.type === 'income' ? 'money-plus' : 'money-minus'}">
+                            ${t.type === 'income' ? '+' : '-'} ${t.amount}
+                        </span>
+                        <button class="del-btn" onclick="deleteItem(${t.id})">x</button>
+                    </div>
+                `;
+                listDiv.appendChild(row);
+            });
+
+            document.getElementById('showIncome').innerText = totalInc;
+            document.getElementById('showExpense').innerText = totalExp;
+            
+            const net = (db.salary + totalInc) - totalExp;
+            document.getElementById('showNet').innerText = net;
+            
+            const bigBal = document.getElementById('finalBalance');
+            bigBal.innerText = net + ' ج.م';
+            bigBal.style.color = net >= 0 ? '#198754' : '#dc3545';
+
+            // --- تحديث الرسوم البيانية ---
+            updateCharts();
+        }
+
+        function clearAll() {
+            if(confirm("هتمسح كل حاجة وتبدأ من الصفر؟")) {
+                localStorage.removeItem('myMoneyApp_v2');
+                location.reload();
+            }
+        }
+
+        // --- دالة جديدة لتجهيز ورسم البيانات ---
+        function updateCharts() {
+            // 1. تجميع البيانات
+            let expTotals = {};
+            let incTotals = {};
+
+            db.transactions.forEach(t => {
+                if(t.type === 'expense') {
+                    expTotals[t.category] = (expTotals[t.category] || 0) + t.amount;
+                } else {
+                    incTotals[t.category] = (incTotals[t.category] || 0) + t.amount;
+                }
+            });
+
+            // 2. دالة مساعدة للرسم
+            function drawChart(canvasId, chartInstance, dataObj, colorBase, noDataId) {
+                const labels = Object.keys(dataObj);
+                const data = Object.values(dataObj);
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                const noDataEl = document.getElementById(noDataId);
+
+                // لو مفيش بيانات اخفي الرسم واظهر رسالة
+                if(data.length === 0) {
+                    document.getElementById(canvasId).style.display = 'none';
+                    noDataEl.classList.remove('hide');
+                    if(chartInstance) chartInstance.destroy();
+                    return null;
+                }
+
+                // لو فيه بيانات اظهر الرسم
+                document.getElementById(canvasId).style.display = 'block';
+                noDataEl.classList.add('hide');
+
+                if (chartInstance) {
+                    chartInstance.destroy(); // مسح الرسم القديم عشان ميتراكمش
+                }
+
+                // ألوان عشوائية بناء على اللون الأساسي
+                let bgColors = labels.map(() => {
+                   if(colorBase === 'red') return `hsl(${Math.random() * 50 + 330}, 70%, 60%)`; // درجات الأحمر
+                   return `hsl(${Math.random() * 60 + 100}, 60%, 50%)`; // درجات الأخضر
+                });
+
+                return new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: bgColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+
+            // 3. تنفيذ الرسم
+            expChartInstance = drawChart('expenseChart', expChartInstance, expTotals, 'red', 'noExpData');
+            incChartInstance = drawChart('incomeChart', incChartInstance, incTotals, 'green', 'noIncData');
+        }
+    </script>
+
+</body>
+</html>
